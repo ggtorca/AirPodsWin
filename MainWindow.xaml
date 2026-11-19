@@ -1,0 +1,178 @@
+﻿<Window x:Class="AirPodsWin.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:AirPodsWin"
+        Title="AirPods" Width="340" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True"
+        Background="Transparent" Foreground="White"
+        FontFamily="Segoe UI Variable Text, Segoe UI">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVis"/>
+        <local:InverseBoolToVisibilityConverter x:Key="InvBoolVis"/>
+
+        <Geometry x:Key="BudIcon">M10,2 C5.6,2 3,5 3,9 C3,12.5 5.5,15 9,15 L9,22 C9,23.1 9.9,24 11,24 C12.1,24 13,23.1 13,22 L13,3 C13,2.4 12.6,2 12,2 Z</Geometry>
+        <Geometry x:Key="CaseIcon">M3,9 C3,6.8 4.8,5 7,5 L21,5 C23.2,5 25,6.8 25,9 L25,19 C25,21.2 23.2,23 21,23 L7,23 C4.8,23 3,21.2 3,19 Z M3,11 L25,11 L25,12.2 L3,12.2 Z</Geometry>
+
+        <Style x:Key="FillBtn" TargetType="RepeatButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton"><Rectangle Fill="#F5FFFFFF"/></ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="EmptyBtn" TargetType="RepeatButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton"><Rectangle Fill="Transparent"/></ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="GhostThumb" TargetType="Thumb">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent"/></ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PillSlider" TargetType="Slider">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="30" Background="Transparent">
+                            <Grid.Clip><RectangleGeometry Rect="0,0,236,30" RadiusX="15" RadiusY="15"/></Grid.Clip>
+                            <Border Background="#40FFFFFF"/>
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource FillBtn}" Command="Slider.DecreaseLarge"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource EmptyBtn}" Command="Slider.IncreaseLarge"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb><Thumb Width="1" Style="{StaticResource GhostThumb}"/></Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SpeakerIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="#C0FFFFFF"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Botón sin cromo (texto clicable / filas de lista) -->
+        <Style x:Key="PlainBtn" TargetType="Button">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#22FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="Root">
+        <Grid x:Name="Card" Margin="24,22,24,18" RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform><TranslateTransform x:Name="Slide"/></Grid.RenderTransform>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Cabecera -->
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="290"/>
+                <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="#A0FFFFFF"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                           Margin="0,3,0,0" MaxWidth="290"/>
+            </StackPanel>
+
+            <!-- Anillos de batería  /  lista de salidas (se alternan) -->
+            <Grid Grid.Row="1" Margin="0,14,0,14" MinHeight="150">
+                <UniformGrid Columns="3" VerticalAlignment="Center" Opacity="{Binding RingOpacity}"
+                             Visibility="{Binding ShowOutputs, Converter={StaticResource InvBoolVis}}">
+                    <local:BatteryRing Title="Izquierdo" Percent="{Binding Left}" IsCharging="{Binding LeftCharging}"
+                                       IconData="{StaticResource BudIcon}" Mirror="True"/>
+                    <local:BatteryRing Title="Derecho" Percent="{Binding Right}" IsCharging="{Binding RightCharging}"
+                                       IconData="{StaticResource BudIcon}"/>
+                    <local:BatteryRing Title="Estuche" Percent="{Binding Case}" IsCharging="{Binding CaseCharging}"
+                                       IconData="{StaticResource CaseIcon}"/>
+                </UniformGrid>
+
+                <StackPanel Visibility="{Binding ShowOutputs, Converter={StaticResource BoolVis}}">
+                    <TextBlock Text="Salida de audio" FontSize="12" Foreground="#A0FFFFFF" Margin="8,0,0,6"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="190">
+                        <ItemsControl ItemsSource="{Binding Outputs}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource PlainBtn}" Tag="{Binding Id}" Padding="8,8"
+                                            Click="Output_Click">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="22"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Check}" Foreground="#0A84FF" FontSize="13"
+                                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13"
+                                                       Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Grid>
+
+            <!-- Volumen -->
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource SpeakerIcon}" Text="&#xE992;" Margin="0,0,8,0"/>
+                <Slider x:Name="VolSlider" Grid.Column="1" Width="236" Minimum="0" Maximum="100"
+                        Value="{Binding Volume, Mode=TwoWay}" Style="{StaticResource PillSlider}"
+                        Focusable="False"
+                        PreviewMouseLeftButtonDown="Vol_Down" PreviewMouseMove="Vol_Move"
+                        PreviewMouseLeftButtonUp="Vol_Up" MouseWheel="Vol_Wheel"/>
+                <TextBlock Grid.Column="2" Style="{StaticResource SpeakerIcon}" Text="{Binding VolumeIcon}" Margin="8,0,0,0"/>
+            </Grid>
+
+            <!-- Selector de salida -->
+            <Button Grid.Row="4" Style="{StaticResource PlainBtn}" Click="ToggleOutputs_Click"
+                    Margin="0,10,0,0" Padding="10,6" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding OutputText}" FontSize="11.5" Foreground="#B0FFFFFF"
+                               TextTrimming="CharacterEllipsis" MaxWidth="240"/>
+                    <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="9"
+                               Foreground="#B0FFFFFF" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>
+
