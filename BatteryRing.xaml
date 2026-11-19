@@ -6,6 +6,8 @@
         <Grid Width="68" Height="68">
             <Ellipse Margin="2.5" Stroke="#33FFFFFF" StrokeThickness="5"/>
             <Path x:Name="Arc" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+            <Image x:Name="Pic" Width="54" Height="54" Stretch="Uniform" Visibility="Collapsed"
+                   RenderOptions.BitmapScalingMode="HighQuality"/>
             <Viewbox Width="26" Height="26" RenderTransformOrigin="0.5,0.5" x:Name="IconBox">
                 <Path x:Name="Icon" Fill="White"/>
             </Viewbox>

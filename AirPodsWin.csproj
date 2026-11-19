@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -11,10 +11,18 @@
     <AssemblyName>AirPodsWin</AssemblyName>
     <RootNamespace>AirPodsWin</RootNamespace>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\icon.ico" />
+    <Resource Include="Assets\pod-left.png" />
+    <Resource Include="Assets\pod-right.png" />
+    <Resource Include="Assets\pod-case.png" />
+    <Resource Include="Assets\pod-max.png" />
     <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
 
 </Project>
+
+

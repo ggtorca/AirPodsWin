@@ -10,9 +10,6 @@
         <BooleanToVisibilityConverter x:Key="BoolVis"/>
         <local:InverseBoolToVisibilityConverter x:Key="InvBoolVis"/>
 
-        <Geometry x:Key="BudIcon">M10,2 C5.6,2 3,5 3,9 C3,12.5 5.5,15 9,15 L9,22 C9,23.1 9.9,24 11,24 C12.1,24 13,23.1 13,22 L13,3 C13,2.4 12.6,2 12,2 Z</Geometry>
-        <Geometry x:Key="CaseIcon">M3,9 C3,6.8 4.8,5 7,5 L21,5 C23.2,5 25,6.8 25,9 L25,19 C25,21.2 23.2,23 21,23 L7,23 C4.8,23 3,21.2 3,19 Z M3,11 L25,11 L25,12.2 L3,12.2 Z</Geometry>
-
         <Style x:Key="FillBtn" TargetType="RepeatButton">
             <Setter Property="Template">
                 <Setter.Value>
@@ -109,15 +106,21 @@
 
             <!-- Anillos de batería  /  lista de salidas (se alternan) -->
             <Grid Grid.Row="1" Margin="0,14,0,14" MinHeight="150">
-                <UniformGrid Columns="3" VerticalAlignment="Center" Opacity="{Binding RingOpacity}"
-                             Visibility="{Binding ShowOutputs, Converter={StaticResource InvBoolVis}}">
+                <Grid VerticalAlignment="Center" Opacity="{Binding RingOpacity}"
+                      Visibility="{Binding ShowOutputs, Converter={StaticResource InvBoolVis}}">
+                <UniformGrid Columns="3" Visibility="{Binding IsHeadset, Converter={StaticResource InvBoolVis}}"
+                             >
                     <local:BatteryRing Title="Izquierdo" Percent="{Binding Left}" IsCharging="{Binding LeftCharging}"
-                                       IconData="{StaticResource BudIcon}" Mirror="True"/>
+                                       IconImage="/Assets/pod-left.png"/>
                     <local:BatteryRing Title="Derecho" Percent="{Binding Right}" IsCharging="{Binding RightCharging}"
-                                       IconData="{StaticResource BudIcon}"/>
+                                       IconImage="/Assets/pod-right.png"/>
                     <local:BatteryRing Title="Estuche" Percent="{Binding Case}" IsCharging="{Binding CaseCharging}"
-                                       IconData="{StaticResource CaseIcon}"/>
+                                       IconImage="/Assets/pod-case.png"/>
                 </UniformGrid>
+                <local:BatteryRing Title="Auriculares" Percent="{Binding Headset}" IsCharging="{Binding HeadsetCharging}"
+                                   IconImage="/Assets/pod-max.png" HorizontalAlignment="Center"
+                                   Visibility="{Binding IsHeadset, Converter={StaticResource BoolVis}}"/>
+                </Grid>
 
                 <StackPanel Visibility="{Binding ShowOutputs, Converter={StaticResource BoolVis}}">
                     <TextBlock Text="Salida de audio" FontSize="12" Foreground="#A0FFFFFF" Margin="8,0,0,6"/>
@@ -153,9 +156,13 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Style="{StaticResource SpeakerIcon}" Text="&#xE992;" Margin="0,0,8,0"/>
+                <Button Grid.Column="0" Style="{StaticResource PlainBtn}" Click="Mute_Click" Margin="-4,0,4,0" Padding="4,4"
+                        ToolTip="{Binding MuteTip}">
+                    <TextBlock Style="{StaticResource SpeakerIcon}" Text="{Binding MuteIcon}"/>
+                </Button>
                 <Slider x:Name="VolSlider" Grid.Column="1" Width="236" Minimum="0" Maximum="100"
                         Value="{Binding Volume, Mode=TwoWay}" Style="{StaticResource PillSlider}"
+                        Opacity="{Binding SliderOpacity}"
                         Focusable="False"
                         PreviewMouseLeftButtonDown="Vol_Down" PreviewMouseMove="Vol_Move"
                         PreviewMouseLeftButtonUp="Vol_Up" MouseWheel="Vol_Wheel"/>
@@ -175,4 +182,6 @@
         </Grid>
     </Grid>
 </Window>
+
+
 

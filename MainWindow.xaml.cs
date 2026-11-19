@@ -92,6 +92,8 @@ public partial class MainWindow : Window
     // ---------- Salida de audio ----------
     private MainViewModel Vm => (MainViewModel)DataContext;
 
+    private void Mute_Click(object sender, RoutedEventArgs e) => Vm.ToggleMute();
+
     private void ToggleOutputs_Click(object sender, RoutedEventArgs e) => Vm.ShowOutputs = !Vm.ShowOutputs;
 
     private void Output_Click(object sender, RoutedEventArgs e) =>

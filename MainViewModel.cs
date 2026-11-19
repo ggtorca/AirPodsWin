@@ -15,16 +15,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private AirPodsInfo? _info;
     private string? _error;
     private bool _updatingVolume;
+    private readonly bool _demo;
 
-    public MainViewModel(bool demo)
+    public MainViewModel(bool demo, bool demoMax = false)
     {
+        _demo = demo;
         _volume.Changed += () => _ui.BeginInvoke(SyncVolume);
         _volume.Refresh();
         SyncVolume();
 
         if (demo)
         {
-            _info = new AirPodsInfo("AirPods Pro (2.ª gen)", 85, 75, 100, false, true, false, -40, DateTime.UtcNow.AddYears(1));
+            _info = demoMax
+                ? new AirPodsInfo("AirPods Max", -1, -1, -1, false, false, false, -40, DateTime.UtcNow.AddYears(1),
+                                  IsHeadset: true, Headset: 65, HeadsetCharging: false)
+                : new AirPodsInfo("AirPods Pro (2.ª gen)", 85, 75, 100, false, true, false, -40, DateTime.UtcNow.AddYears(1));
         }
         else
         {
@@ -47,13 +52,24 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     // ---------- Batería ----------
     private bool Fresh => _info != null && DateTime.UtcNow - _info.Seen < TimeSpan.FromSeconds(20);
 
-    public int Left => _info?.Left ?? -1;
-    public int Right => _info?.Right ?? -1;
-    public int Case => _info?.Case ?? -1;
-    public bool LeftCharging => _info?.LeftCharging ?? false;
-    public bool RightCharging => _info?.RightCharging ?? false;
-    public bool CaseCharging => _info?.CaseCharging ?? false;
-    public double RingOpacity => Fresh ? 1.0 : 0.45;
+    /// <summary>Solo se muestra y se avisa de la batería cuando la salida de audio activa son unos AirPods.</summary>
+    private bool AirPodsActive => _demo || _volume.IsAirPods;
+    private AirPodsInfo? Info => AirPodsActive ? _info : null;
+
+    public int Left => Info?.Left ?? -1;
+    public int Right => Info?.Right ?? -1;
+    public int Case => Info?.Case ?? -1;
+    public bool LeftCharging => Info?.LeftCharging ?? false;
+    public bool RightCharging => Info?.RightCharging ?? false;
+    public bool CaseCharging => Info?.CaseCharging ?? false;
+
+    // AirPods Max: una sola batería y sin estuche. Si aún no ha llegado ningún anuncio Bluetooth,
+    // se reconoce por el nombre de la salida de audio activa.
+    public bool IsHeadset => Info?.IsHeadset
+        ?? (AirPodsActive && _volume.DeviceName.Contains("AirPods Max", StringComparison.OrdinalIgnoreCase));
+    public int Headset => Info?.Headset ?? -1;
+    public bool HeadsetCharging => Info?.HeadsetCharging ?? false;
+    public double RingOpacity => AirPodsActive && Fresh ? 1.0 : 0.45;
 
     // ---------- Aviso de batería baja ----------
     private const int LowThreshold = 20;     // avisa por debajo de este porcentaje
@@ -65,6 +81,14 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private void CheckLowBattery(AirPodsInfo i)
     {
+        if (!AirPodsActive) return;   // otra salida de audio: sin avisos
+
+        if (i.IsHeadset)
+        {
+            Check("AirPods Max", i.Headset, i.HeadsetCharging);
+            return;
+        }
+
         Check("Auricular izquierdo", i.Left, i.LeftCharging);
         Check("Auricular derecho", i.Right, i.RightCharging);
         Check("Estuche", i.Case, i.CaseCharging);
@@ -83,7 +107,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         get
         {
             if (_volume.IsAirPods) return ExtractName(_volume.DeviceName);
-            return _info?.Model ?? "AirPods";
+            return Info?.Model ?? "AirPods";
         }
     }
 
@@ -91,10 +115,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         get
         {
+            if (!AirPodsActive) return "La salida de audio actual no son unos AirPods";
             if (_error != null) return _error;
             if (_info == null) return "Buscando AirPods… abre la tapa del estuche cerca del PC";
-            var state = !Fresh ? "Sin señal reciente" : _volume.IsAirPods ? "Conectados" : "Cerca";
-            return _volume.IsAirPods ? $"{_info.Model} · {state}" : state;
+            var state = !Fresh ? "Sin señal reciente" : "Conectados";
+            return $"{_info.Model} · {state}";
         }
     }
 
@@ -106,8 +131,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         get
         {
+            if (!AirPodsActive) return "AirPods — salida de audio no activa";
             if (_info == null) return "AirPods — sin datos";
             static string F(int v) => v < 0 ? "—" : $"{v}%";
+            if (IsHeadset) return $"AirPods Max  {F(Headset)}";
             return $"AirPods  L {F(Left)}  R {F(Right)}  Estuche {F(Case)}";
         }
     }
@@ -155,6 +182,19 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    // ---------- Silenciar ----------
+    private bool _muted;
+    /// <summary>Altavoz tachado cuando está silenciado.</summary>
+    public string MuteIcon => _muted ? "" : "";
+    public double SliderOpacity => _muted ? 0.45 : 1.0;
+    public string MuteTip => _muted ? "Activar sonido" : "Silenciar";
+
+    public void ToggleMute()
+    {
+        _volume.Muted = !_volume.Muted;
+        SyncVolume();
+    }
+
     public string VolumeIcon => _volumePct <= 0 ? "" : _volumePct < 34 ? "" : _volumePct < 67 ? "" : "";
 
     private void SyncVolume()
@@ -162,6 +202,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _updatingVolume = true;
         try { Volume = Math.Round(_volume.Level * 100); }
         finally { _updatingVolume = false; }
+        _muted = _volume.Muted;
+        Notify(nameof(MuteIcon));
+        Notify(nameof(SliderOpacity));
+        Notify(nameof(MuteTip));
         Notify(nameof(OutputText));
         Notify(nameof(Title));
         Notify(nameof(Subtitle));

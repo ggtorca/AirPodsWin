@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -24,9 +24,10 @@ public partial class App : Application
         _mutex = new Mutex(true, "AirPodsWin_SingleInstance", out bool first);
         if (!first) { Shutdown(); return; }
 
-        bool demo = e.Args.Contains("--demo");
+        bool demoMax = e.Args.Contains("--demo-max");
+        bool demo = e.Args.Contains("--demo") || demoMax;
 
-        _vm = new MainViewModel(demo);
+        _vm = new MainViewModel(demo, demoMax);
         _window = new MainWindow(_vm) { KeepOpen = demo };
 
         var menu = new Forms.ContextMenuStrip();
@@ -55,7 +56,7 @@ public partial class App : Application
             _tray.Text = t.Length > 63 ? t[..63] : t;
         };
 
-        if (demo) _window.ShowPopup();
+        if (demo || e.Args.Contains("--snapshot")) { _window.KeepOpen = true; _window.ShowPopup(); }
 
         // Herramienta de desarrollo: --demo --snapshot <ruta.png> guarda capturas de la interfaz y sale.
         int si = Array.IndexOf(e.Args, "--snapshot");
@@ -66,8 +67,10 @@ public partial class App : Application
             int step = 0;
             t.Tick += (_, _) =>
             {
-                Snapshot(path.Replace(".png", step == 0 ? "_main.png" : "_outputs.png"));
+                Snapshot(path.Replace(".png", step == 0 ? "_main.png" : step == 1 ? "_outputs.png" : "_muted.png"));
                 if (step++ == 0) { _vm!.ShowOutputs = true; return; }
+                if (step == 2) { _vm!.ShowOutputs = false; _vm.ToggleMute(); return; }
+                _vm!.ToggleMute();   // restaura el estado original del sonido
                 t.Stop(); Quit();
             };
             t.Start();
@@ -108,34 +111,13 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    // ---------- Icono de bandeja (se adapta al tema de la barra de tareas) ----------
+    // ---------- Icono de bandeja (el logo, en el tamaño que pide Windows) ----------
     private static Drawing.Icon MakeIcon()
     {
-        bool light = false;
-        try
-        {
-            using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-            light = (k?.GetValue("SystemUsesLightTheme") as int?) == 1;
-        }
-        catch { }
-
-        using var bmp = new Drawing.Bitmap(32, 32);
-        using (var g = Drawing.Graphics.FromImage(bmp))
-        {
-            g.SmoothingMode = Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using var br = new Drawing.SolidBrush(light ? Drawing.Color.Black : Drawing.Color.White);
-            g.FillEllipse(br, 5, 2, 18, 18);                 // cabeza del auricular
-            using var path = new Drawing.Drawing2D.GraphicsPath();
-            path.AddArc(16, 16, 8, 8, 180, 180);             // vástago redondeado
-            path.AddLine(24, 20, 24, 28);
-            path.AddArc(16, 24, 8, 8, 0, 180);
-            path.CloseFigure();
-            g.FillRectangle(br, 16, 10, 8, 18);
-            g.FillEllipse(br, 16, 24, 8, 8);
-        }
-        return Drawing.Icon.FromHandle(bmp.GetHicon());
+        var uri = new Uri("pack://application:,,,/Assets/icon.ico");
+        using var stream = GetResourceStream(uri).Stream;
+        return new Drawing.Icon(stream, Forms.SystemInformation.SmallIconSize);
     }
-
     // ---------- Inicio automático ----------
     private static bool IsAutostart()
     {
@@ -151,3 +133,4 @@ public partial class App : Application
         else k.DeleteValue(RunName, false);
     }
 }
+

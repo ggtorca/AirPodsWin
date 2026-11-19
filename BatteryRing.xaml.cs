@@ -12,6 +12,7 @@ public partial class BatteryRing : UserControl
     public static readonly DependencyProperty TitleProperty = Reg<string>(nameof(Title), "");
     public static readonly DependencyProperty IconDataProperty = Reg<Geometry?>(nameof(IconData), null);
     public static readonly DependencyProperty MirrorProperty = Reg<bool>(nameof(Mirror), false);
+    public static readonly DependencyProperty IconImageProperty = Reg<ImageSource?>(nameof(IconImage), null);
 
     private static DependencyProperty Reg<T>(string name, T def) =>
         DependencyProperty.Register(name, typeof(T), typeof(BatteryRing),
@@ -22,6 +23,8 @@ public partial class BatteryRing : UserControl
     public string Title { get => (string)GetValue(TitleProperty); set => SetValue(TitleProperty, value); }
     public Geometry? IconData { get => (Geometry?)GetValue(IconDataProperty); set => SetValue(IconDataProperty, value); }
     public bool Mirror { get => (bool)GetValue(MirrorProperty); set => SetValue(MirrorProperty, value); }
+    /// <summary>Imagen para el centro del anillo; si no hay, se usa el icono vectorial IconData.</summary>
+    public ImageSource? IconImage { get => (ImageSource?)GetValue(IconImageProperty); set => SetValue(IconImageProperty, value); }
 
     private static readonly Brush Green = Freeze(Color.FromRgb(0x30, 0xD1, 0x58));
     private static readonly Brush Red = Freeze(Color.FromRgb(0xFF, 0x45, 0x3A));
@@ -44,6 +47,9 @@ public partial class BatteryRing : UserControl
         Bolt.Visibility = known && IsCharging ? Visibility.Visible : Visibility.Collapsed;
         TitleText.Text = Title;
         Icon.Data = IconData;
+        Pic.Source = IconImage;
+        Pic.Visibility = IconImage != null ? Visibility.Visible : Visibility.Collapsed;
+        IconBox.Visibility = IconImage != null ? Visibility.Collapsed : Visibility.Visible;
         IconBox.RenderTransform = new ScaleTransform(Mirror ? -1 : 1, 1);
 
         if (!known) { Arc.Data = null; return; }
